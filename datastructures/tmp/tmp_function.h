@@ -58,18 +58,48 @@ namespace tmp
 
     namespace detail
     {
-
-        template <size_t F1F2, typename F1SEL, typename F2SEL, typename RF1, typename RF2, typename F1ARGS, typename F2ARGS>
-        struct compose_functions_impl;
-        template <size_t F1F2, size_t ... F1SEL, size_t ... F2SEL,
-                  typename RF1, typename RF2, typename ... F1ARGS, typename ... F2ARGS>
-        struct compose_functions_impl<F1F2, tuple_i<F1SEL...>, tuple_i<F2SEL...>,
-                RF1, RF2, tuple_t<F1ARGS...>, tuple_t<F2ARGS...>>
+        template <size_t THISN, size_t FN, typename FSEL, size_t N>
+        struct select_argument_or_function_impl
         {
-
+            template <typename R, typename ... FARGS, typename T, typename ... TS>
+            static arg_type<N,T,TS...> select(R (*fn)(FARGS...), const T&&, const TS&& ... ts)
+            {
+                return N <= sizeof...(TS) ? select_argument_or_function_impl<THISN,FN,FSEL,N-1>::select(fn,std::forward<const TS>(ts)...) : arg_type<N,T,TS...>{};
+            }
         };
 
+        template <size_t THISN, size_t FN, typename FSEL>
+        struct select_argument_or_function_impl<THISN,FN,FSEL,0>
+        {
+            template <typename R, typename ... ARGS, typename T, typename ... TS>
+            static T select(R (*fn)(ARGS...), const T&& t, const TS&& ...)
+            {
+                return t;
+            }
+        };
+        template <size_t THISN, size_t ... FSEL, size_t N>
+        struct select_argument_or_function_impl<THISN,THISN,tuple_i<FSEL...>,N>
+        {
+            template <typename R, typename ... ARGS, typename ... TS>
+            static R select(R (*fn)(ARGS...), TS&& ... ts)
+            {
+                return select_and_forward_arguments<FSEL...>(fn,std::forward<TS>(ts)...);
+            }
+        };
+
+        template <size_t F1F2, typename SEQ, typename F1SEL, typename F2SEL, typename RF1, typename RF2, typename F1ARGS, typename F2ARGS>
         struct compose_functions_impl;
+        template <size_t F1F2, size_t ... SEQ, size_t ... F1SEL, typename F2SEL,
+                  typename RF1, typename RF2, typename ... F1ARGS, typename ... F2ARGS>
+        struct compose_functions_impl<F1F2, tuple_i<SEQ...>, tuple_i<F1SEL...>, F2SEL,
+                RF1, RF2, tuple_t<F1ARGS...>, tuple_t<F2ARGS...>>
+        {
+            template <typename ... GARGS>
+            static RF1 compose_functions(RF1 (*f1)(F1ARGS...), RF2 (*f2)(F2ARGS...), GARGS&& ... args)
+            {
+                return f1(select_argument_or_function_impl<SEQ,F1F2,F2SEL,F1SEL>::select(f2,std::forward<GARGS>(args)...)...);
+            }
+        };
 
         template <  size_t   F1F2,      // The function parameter index of F1 where F2 will be invoked
                     typename F1SEL,     // A tuple specifying which argument to which function parameter for F1
@@ -79,16 +109,19 @@ namespace tmp
                     typename ... F1ARGS,// F1 arguments
                     typename ... F2ARGS,// F2 arguments
                     typename ... GARGS>
-        R compose_functions(RF1 (*f1)(F1ARGS...), RF2 (*f2)(F2ARGS...), GARGS&& ... args)
+        RF1 compose_functions(RF1 (*f1)(F1ARGS...), RF2 (*f2)(F2ARGS...), GARGS&& ... args)
         {
-
+            return compose_functions_impl<F1F2, 
+                            sequence<sizeof...(F1ARGS)>, F1SEL, F2SEL, RF1, RF2, 
+                            tuple_t<F1ARGS...>, tuple_t<F2ARGS...>>::compose_functions
+                   (f1,f2,std::forward<GARGS>(args)...);
         }
 
 
     } // namespace detail
 
     // {T...} ---- split ----> {T-...} ---- FN ----> {R...} ---- COMBINE ----> {R+...}
-    template <typename R, typename ... FNARGS, typename T>
+    template <typename R, typename ... FNARGS, typename ... ARGS>
     R split_apply_combine(R (*combine)(FNARGS...), ARGS && ... args)
     {
 
@@ -157,7 +190,7 @@ namespace tmp
 
             return_type execute(functor& f, get_element_at<SAS, AS...>&& ... args)
             {
-                return f(std::forward<get_element_at<SAS, AS...>(args)...);
+                return f(std::forward<get_element_at<SAS, AS...>>(args)...);
             }
         };
 

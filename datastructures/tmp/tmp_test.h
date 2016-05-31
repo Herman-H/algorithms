@@ -356,14 +356,17 @@ void test_select_and_forward_arguments()
     printf("tmp::select_and_forward_arguments<0,0,1,3,0>(fwdfn5,13,281,22,9,0,112) = %d\n", tmp::select_and_forward_arguments<0,0,1,3,0>(fwdfn5,13,281,22,9,0,112));
 }
 
-template <typename R,typename ... ARGS>
-struct test_functor
+int add(int a, int b) { return a + b; }
+int square(int a, int b, int c, int d) { return a*a + b*b + c*c + d*d; }
+
+void test_compose_functions()
 {
-    R operator()(ARGS && ... args)
-    {
-        return a = [&]() { return R{}; };
-    }
-};
+    printf("\nTesting tmp::detail::compose_functions<...>(...):\n");
+    
+    // 2*2 + 5*5 + 8*8 + 3*3 - 2*2 + (5+6)(5+6) = 25 + 64 + 9 + 121 = 89 + 130 = 219
+    printf("compose(square,add,0,1,2,3,4,5,6,7,8) = %d\n",tmp::detail::compose_functions<0,tmp::tuple_i<2,5,8,3>,tmp::tuple_i<5,6>>(square,add,0,1,2,3,4,5,6,7,8));
+}
+
 
 void test_generate_functor()
 {
