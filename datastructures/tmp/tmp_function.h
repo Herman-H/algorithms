@@ -34,6 +34,18 @@ namespace tmp
             }
         };
 
+        template <size_t N, typename ... TS>
+        struct select_argument_lambda_impl
+        {
+            static auto lambda()
+            {
+                return [](const TS && ... ts)
+                {
+                    return select_argument_impl<N,TS...>::select(std::forward<const TS>(ts)...);
+                };
+            }
+        };
+
     } // namespace detail
 
     template <size_t N, typename ... TS>
@@ -41,6 +53,15 @@ namespace tmp
     {
         static_assert(sizeof...(args) > N, "Index is out of range!\n");
         return detail::select_argument_impl<N,TS...>::select(std::forward<const TS>(args)...);
+    }
+
+    template <size_t N>
+    auto select_argument_lambda()
+    {
+        return [](const auto && ... args)
+        {
+            return select_argument<N>(std::forward<decltype(args)>(args)...);
+        };
     }
 
 

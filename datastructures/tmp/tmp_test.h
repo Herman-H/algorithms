@@ -338,6 +338,15 @@ void test_select_argument()
     printf("tmp::select_argument<3>(13,281,22,9,0,112) = %d\n", tmp::select_argument<3>(13,281,22,9,0,112));
     printf("tmp::select_argument<4>(13,281,22,9,0,112) = %d\n", tmp::select_argument<4>(13,281,22,9,0,112));
     printf("tmp::select_argument<5>(13,281,22,9,0,112) = %d\n", tmp::select_argument<5>(13,281,22,9,0,112));
+    printf("\nTesting tmp::select_argument_lambda<N>(args...):\n");
+    auto l1 = tmp::select_argument_lambda<0>();
+    auto l2 = tmp::select_argument_lambda<1>();
+    auto l3 = tmp::select_argument_lambda<2>();
+    auto l4 = tmp::select_argument_lambda<3>();
+    printf("lambda<0>(13,281,22,9,0,112,14) = %d\n", l1(13,281,22,9,0,112,14));
+    printf("lambda<1>(13,281,22,9,0,112,14) = %d\n", l2(13,281,22,9,0,112,14));
+    printf("lambda<2>(13,281,22,9,0,112,14) = %d\n", l3(13,281,22,9,0,112,14));
+    printf("lambda<3>(13,281,22,9,0,112,14) = %d\n", l4(13,281,22,9,0,112,14));
 }
 
 int fwdfn1(int a, int b, int c)                 { return a+b+c; }
@@ -367,14 +376,6 @@ void test_compose_functions()
     printf("compose(square,add,0,1,2,3,4,5,6,7,8) = %d\n",tmp::detail::compose_functions<0,tmp::tuple_i<2,5,8,3>,tmp::tuple_i<5,6>>(square,add,0,1,2,3,4,5,6,7,8));
 }
 
-
-void test_generate_functor()
-{
-    typedef test_functor<int, int,int,int> f1;
-}
-
-
-
 void test_all()
 {
     test_type_comparation();
@@ -392,6 +393,7 @@ void test_all()
     test_primes();
     test_select_argument();
     test_select_and_forward_arguments();
+    test_compose_functions();
 }
 
 
