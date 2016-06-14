@@ -363,6 +363,17 @@ void test_select_and_forward_arguments()
     printf("tmp::select_and_forward_arguments<0,2,4,1>(fwdfn3,13,281,22,9,0,112) = %d\n", tmp::select_and_forward_arguments<0,2,4,1>(fwdfn3,13,281,22,9,0,112));
     printf("tmp::select_and_forward_arguments<5,3,2>(fwdfn4,13,281,22,9,0,112) = %d\n", tmp::select_and_forward_arguments<5,3,2>(fwdfn4,13,281,22,9,0,112));
     printf("tmp::select_and_forward_arguments<0,0,1,3,0>(fwdfn5,13,281,22,9,0,112) = %d\n", tmp::select_and_forward_arguments<0,0,1,3,0>(fwdfn5,13,281,22,9,0,112));
+    printf("\nTesting tmp::select_and_forward_arguments_lambda<NS...>(fn,args...):\n");
+    auto l1 = tmp::select_and_forward_arguments_lambda<0,2,4>();
+    auto l2 = tmp::select_and_forward_arguments_lambda<0,1>();
+    auto l3 = tmp::select_and_forward_arguments_lambda<0,2,4,1>();
+    auto l4 = tmp::select_and_forward_arguments_lambda<5,3,2>();
+    auto l5 = tmp::select_and_forward_arguments_lambda<0,0,1,3,0>();
+    printf("lambda<0,2,4>(fwdfn1,13,281,22,9,0,112) = %d\n", l1(fwdfn1,13,281,22,9,0,112));
+    printf("lambda<0,1>(fwdfn2,13,281,22,9,0,112) = %d\n", l2(fwdfn2,13,281,22,9,0,112));
+    printf("lambda<0,2,4,1>(fwdfn3,13,281,22,9,0,112) = %d\n", l3(fwdfn3,13,281,22,9,0,112));
+    printf("lambda<5,3,2>(fwdfn4,13,281,22,9,0,112) = %d\n", l4(fwdfn4,13,281,22,9,0,112));
+    printf("lambda<0,0,1,3,0>(fwdfn5,13,281,22,9,0,112) = %d\n", l5(fwdfn5,13,281,22,9,0,112));
 }
 
 int add(int a, int b) { return a + b; }
@@ -374,7 +385,24 @@ void test_compose_functions()
     
     // 2*2 + 5*5 + 8*8 + 3*3 - 2*2 + (5+6)(5+6) = 25 + 64 + 9 + 121 = 89 + 130 = 219
     printf("compose(square,add,0,1,2,3,4,5,6,7,8) = %d\n",tmp::detail::compose_functions<0,tmp::tuple_i<2,5,8,3>,tmp::tuple_i<5,6>>(square,add,0,1,2,3,4,5,6,7,8));
+    //auto l1 = tmp::compose_functions_lambda<0>(square,add);
+    //auto l2 = tmp::compose_functions_lambda<0>(
+    //            l1,add);
+    //auto l3 = tmp::compose_functions_lambda<0>(l2,add);
+    //auto l33 = tmp::compose_functions_lambda<0>(l3,add);
+    //printf("lambda1(5,8,3,5,6) = %d\n",l1(5,8,3,5,6));
+    //printf("lambda2(1,1,2,2,3,3) = %d\n",l2(1,1,2,2,3,3));
+    //printf("lambda3(1,1,2,2,3,3,4) = %d\n",l3(1,1,2,2,3,3,4));
+    //printf("lambda4(1,1,2,2,3,3,4,4) = %d\n",l33(1,1,2,2,3,3,4,4));
+    int b = square(add(1,1),add(2,2),add(3,3),add(4,4));
+    auto ll = tmp::compose_functions_lambda<3>(
+                tmp::compose_functions_lambda<2>(
+                    tmp::compose_functions_lambda<1>(
+                        tmp::compose_functions_lambda<0>(square,add),add),add),add)(1,1,2,2,3,3,4,4);
+    printf("ll(1,1,2,2,3,3,4,4) = %d\n",ll);
+    printf("b = %d\n",b);
 }
+
 
 void test_all()
 {

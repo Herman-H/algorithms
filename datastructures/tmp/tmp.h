@@ -247,6 +247,76 @@ struct prepend<T<ES...>>
 
 namespace detail
 {
+    template <size_t I, typename S, typename T, typename E>
+    struct insert_element_at_impl
+    {
+        typedef S type;
+    };
+    template <size_t I, template <typename...> class TUP, typename ... S, typename T, typename ... TS, typename E>
+    struct insert_element_at_impl<I, TUP<S...>, TUP<T,TS...>, E>
+    {
+        typedef typename insert_element_at_impl<I-1, TUP<S...,T>, TUP<TS...>, E>::type type;
+    };
+    template <template <typename...> class TUP, typename ... S, typename T, typename ... TS, typename E>
+    struct insert_element_at_impl<0, TUP<S...>, TUP<T,TS...>, E>
+    {
+        typedef TUP<S...,E,T,TS...> type;
+    };
+    template <template <typename...> class TUP, typename ... S, typename ... TS, typename E>
+    struct insert_element_at_impl<0, TUP<S...>, TUP<TS...>, E>
+    {
+        typedef TUP<S...,E,TS...> type;
+    };
+    template <size_t I, typename S, typename T, size_t E>
+    struct insert_element_at_i_impl
+    {
+        typedef S type;
+    };
+    template <size_t I, template <size_t...> class TUP, size_t ... S, size_t T, size_t ... TS, size_t E>
+    struct insert_element_at_i_impl<I, TUP<S...>, TUP<T,TS...>, E>
+    {
+        typedef typename insert_element_at_i_impl<I-1, TUP<S...,T>, TUP<TS...>, E>::type type;
+    };
+    template <template <size_t...> class TUP, size_t ... S, size_t T, size_t ... TS, size_t E>
+    struct insert_element_at_i_impl<0, TUP<S...>, TUP<T,TS...>, E>
+    {
+        typedef TUP<S...,E,T,TS...> type;
+    };
+    template <template <size_t...> class TUP, size_t ... S, size_t ... TS, size_t E>
+    struct insert_element_at_i_impl<0, TUP<S...>, TUP<TS...>, E>
+    {
+        typedef TUP<S...,E,TS...> type;
+    };
+
+} // namespace detail
+
+template <typename E,typename T>
+struct insert_element_in
+{
+    template <size_t N>
+    struct at;
+};
+template <typename E,template <typename...> class T, typename ... TS>
+struct insert_element_in<E,T<TS...>>
+{
+    template <size_t N>
+    using at = typename detail::insert_element_at_impl<N,T<>,T<TS...>,E>::type;
+};
+
+template <size_t V, typename T>
+struct insert_value_in
+{
+    template <size_t N>
+    struct at;
+};
+template <size_t V,template <size_t...> class T, size_t ... VS>
+struct insert_value_in<V,T<VS...>>
+{
+    template <size_t N>
+    using at = typename detail::insert_element_at_i_impl<N,T<>,T<VS...>,V>::type;
+};
+namespace detail
+{
     template <typename MERGED, typename ... TS>
     struct merge_tuples_impl;
     template <typename ... MS>
@@ -444,6 +514,16 @@ namespace detail
     {
         typedef tuple_t<S...> type;
     };
+    template <typename ... S, typename T, typename ... TS>
+    struct select_first_impl<-1, tuple_t<S...>, T, TS...>
+    {
+        typedef tuple_t<S...> type;
+    };
+    template <typename ... S>
+    struct select_first_impl<-1, tuple_t<S...>>
+    {
+        typedef tuple_t<S...> type;
+    };
     template <size_t SELECT, typename S, size_t ... VS>
     struct select_first_i_impl
     {
@@ -461,6 +541,16 @@ namespace detail
     };
     template <size_t ... S>
     struct select_first_i_impl<0, tuple_i<S...>>
+    {
+        typedef tuple_i<S...> type;
+    };
+    template <size_t ... S, size_t V, size_t ... VS>
+    struct select_first_i_impl<-1, tuple_i<S...>, V, VS...>
+    {
+        typedef tuple_i<S...> type;
+    };
+    template <size_t ... S>
+    struct select_first_i_impl<-1, tuple_i<S...>>
     {
         typedef tuple_i<S...> type;
     };
