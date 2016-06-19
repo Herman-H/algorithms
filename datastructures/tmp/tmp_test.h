@@ -11,7 +11,7 @@ struct enumerated_type
 {
     static void printme()
     {
-        printf("%d",I);
+        printf("%llu",I);
     }
 };
 
@@ -90,10 +90,10 @@ void test_summation_with_compare()
 {
     printf("Test of \"tmp::sum<PREDICATE>::of<TUPLE>\":\n");
     typedef tmp::tuple_t<int,int,bool,char,int,long,bool,float> tup1;
-    int num1 = tmp::sum<tmp::compare<int>::with>::of<tup1>::value;
-    int num2 = tmp::sum<tmp::compare<bool>::with>::of<tup1>::value;
-    printf("Number of ints in tuple_t<int,int,bool,char,int,long,bool,float>: %d\n", num1);
-    printf("Number of bools in tuple_t<int,int,bool,char,int,long,bool,float>: %d\n", num2);
+    size_t num1 = tmp::sum<tmp::compare<int>::with>::of<tup1>::value;
+    size_t num2 = tmp::sum<tmp::compare<bool>::with>::of<tup1>::value;
+    printf("Number of ints in tuple_t<int,int,bool,char,int,long,bool,float>: %llu\n", num1);
+    printf("Number of bools in tuple_t<int,int,bool,char,int,long,bool,float>: %llu\n", num2);
     printf("\n");
 }
 
@@ -177,7 +177,7 @@ void test_signedness()
     printf("\"signed int\" is: %s\n",tmp::is_unsigned<signed int>::value ? "unsigned" : "signed");
     printf("\"char\" is: %s\n",tmp::is_signed<char>::value ? "signed" : "unsigned");
     printf("\"signed char\" is: %s\n",tmp::is_signed<signed char>::value ? "signed" : "unsigned");
-    printf("\"unsigned size_t\" is: %s\n",tmp::is_signed<unsigned int>::value ? "signed" : "unsigned");
+    printf("\"unsigned int\" is: %s\n",tmp::is_signed<unsigned int>::value ? "signed" : "unsigned");
     printf("\n");
 }
 
@@ -220,14 +220,14 @@ void test_explicitly_sized_types()
     tmp::unsigned_sized_type<64,64>  t4(v4);
 
     printf("Test of \"tmp::unsigned_sized_type\":\n");
-    printf("sizeof(unsigned_sized_type<8,8>): %d\n", sizeof(t1)*byte_size);
-    printf("sizeof(unsigned_sized_type<16,16>): %d\n", sizeof(t2)*byte_size);
-    printf("sizeof(unsigned_sized_type<32,32>): %d\n", sizeof(t3)*byte_size);
-    printf("sizeof(unsigned_sized_type<64,64>): %d\n", sizeof(t4)*byte_size);
-    printf("alignof(unsigned_sized_type<8,8>): %d\n", alignof(t1)*byte_size);
-    printf("alignof(unsigned_sized_type<16,16>): %d\n", alignof(t2)*byte_size);
-    printf("alignof(unsigned_sized_type<32,32>): %d\n", alignof(t3)*byte_size);
-    printf("alignof(unsigned_sized_type<64,64>): %d\n", alignof(t4)*byte_size);
+    printf("sizeof(unsigned_sized_type<8,8>): %llu\n", sizeof(t1)*byte_size);
+    printf("sizeof(unsigned_sized_type<16,16>): %llu\n", sizeof(t2)*byte_size);
+    printf("sizeof(unsigned_sized_type<32,32>): %llu\n", sizeof(t3)*byte_size);
+    printf("sizeof(unsigned_sized_type<64,64>): %llu\n", sizeof(t4)*byte_size);
+    printf("alignof(unsigned_sized_type<8,8>): %llu\n", alignof(decltype(t1))*byte_size);
+    printf("alignof(unsigned_sized_type<16,16>): %llu\n", alignof(decltype(t2))*byte_size);
+    printf("alignof(unsigned_sized_type<32,32>): %llu\n", alignof(decltype(t3))*byte_size);
+    printf("alignof(unsigned_sized_type<64,64>): %llu\n", alignof(decltype(t4))*byte_size);
     printf("Value of unsigned_sized_type<8,8> should be %d and is %d.\n", v1, tmp::fundamental_cast<int>(t1));
     printf("Value of unsigned_sized_type<16,16> should be %d and is %d.\n", v2, tmp::fundamental_cast<int>(t2));
     printf("Value of unsigned_sized_type<32,32> should be %d and is %d.\n", v3, tmp::fundamental_cast<int>(t3));
@@ -236,7 +236,7 @@ void test_explicitly_sized_types()
     printf("8 bit: 15-8\t= %d\n", tmp::fundamental_cast<int>(tmp::unsigned_sized_type<8,8>(15) - tmp::unsigned_sized_type<8,8>(8)));
     printf("8 bit: 14*17\t= %d\n", tmp::fundamental_cast<int>(tmp::unsigned_sized_type<8,8>(14) * tmp::unsigned_sized_type<8,8>(17)));
     printf("8 bit: 100/25\t= %d\n", tmp::fundamental_cast<int>(tmp::unsigned_sized_type<8,8>(100) / tmp::unsigned_sized_type<8,8>(25)));
-    printf("8 bit: 8%3\t= %d\n", tmp::fundamental_cast<int>(tmp::unsigned_sized_type<8,8>(8) % tmp::unsigned_sized_type<8,8>(3)));
+    printf("8 bit: 8mod3\t= %d\n", tmp::fundamental_cast<int>(tmp::unsigned_sized_type<8,8>(8) % tmp::unsigned_sized_type<8,8>(3)));
     tmp::unsigned_sized_type<8,8>    t8_1(10);
     tmp::unsigned_sized_type<8,8>    t8_2(15);
     printf("8 bit: 10+15\t= %d\n", tmp::fundamental_cast<int>(t8_1 += t8_2));
@@ -244,7 +244,7 @@ void test_explicitly_sized_types()
     printf("8 bit: 10-15\t= %d\n", tmp::fundamental_cast<int>(t8_1 - t8_2));
     printf("8 bit: 10*15\t= %d\n", tmp::fundamental_cast<int>(t8_1 *= t8_2));
     printf("8 bit: 150/15\t= %d\n", tmp::fundamental_cast<int>(t8_1 /= t8_2));
-    printf("8 bit: 10%15\t= %d\n", tmp::fundamental_cast<int>(t8_1 %= t8_2));
+    printf("8 bit: 10mod15\t= %d\n", tmp::fundamental_cast<int>(t8_1 %= t8_2));
     printf("8 bit: 10+1\t= %d\n", tmp::fundamental_cast<int>(t8_1++));
     printf("8 bit: 11+1\t= %d\n", tmp::fundamental_cast<int>(++t8_1));
     printf("8 bit: 12-1\t= %d\n", tmp::fundamental_cast<int>(t8_1--));
@@ -293,6 +293,17 @@ void test_sized_bitfield()
     printf("Third element should be 11: %d\n",tmp::get_field<2>(bf1));
     printf("Fourth element should be 3: %d\n",tmp::get_field<3>(bf1));
     printf("Fifth element should be 110: %d\n",tmp::get_field<4>(bf1));
+
+    tmp::set_field<2>(bf1,14);
+    tmp::set_field<3>(bf1,29);
+    printf("First element should be 413: %d\n",tmp::get_field<0>(bf1));
+    printf("Second element should be 101: %d\n",tmp::get_field<1>(bf1));
+    printf("Third element should be 14: %d\n",tmp::get_field<2>(bf1));
+    printf("Fourth element should be 13: %d\n",tmp::get_field<3>(bf1));
+    printf("Fifth element should be 110: %d\n",tmp::get_field<4>(bf1));
+
+    tmp::sized_bitfield<64,64> bf2(123);
+    printf("First element should be 123: %llu\n",tmp::get_field<0>(bf2));
     printf("\n");
 }
 
@@ -326,7 +337,6 @@ void test_primes()
     printf("\nThirtieth prime:\t%d",tmp::math::prime<30>::value);
 
     printf("\n");
-
 }
 
 void test_select_argument()
@@ -395,9 +405,9 @@ void test_compose_functions()
     //printf("lambda3(1,1,2,2,3,3,4) = %d\n",l3(1,1,2,2,3,3,4));
     //printf("lambda4(1,1,2,2,3,3,4,4) = %d\n",l33(1,1,2,2,3,3,4,4));
     int b = square(add(1,1),add(2,2),add(3,3),add(4,4));
-    auto ll = tmp::compose_functions_lambda<3>(
-                tmp::compose_functions_lambda<2>(
-                    tmp::compose_functions_lambda<1>(
+    auto ll = tmp::compose_functions_lambda<0>(
+                tmp::compose_functions_lambda<0>(
+                    tmp::compose_functions_lambda<0>(
                         tmp::compose_functions_lambda<0>(square,add),add),add),add)(1,1,2,2,3,3,4,4);
     printf("ll(1,1,2,2,3,3,4,4) = %d\n",ll);
     printf("b = %d\n",b);

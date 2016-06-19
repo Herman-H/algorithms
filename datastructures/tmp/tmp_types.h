@@ -1,7 +1,8 @@
 #ifndef TMP_TYPES_H
 #define TMP_TYPES_H
 
-#include <stddef.h>
+#include <cstddef>
+#include <utility>
 #include <type_traits>
 #include "tmp.h"
 #include "tmp_math.h"
@@ -11,8 +12,30 @@ namespace tmp
 {
 namespace detail
 {
+
+    /* Refer to [basic.fundamental] in C++ Standard
+     *
+     * (1)      {"char", "signed char", "unsigned char"} are distinct types but with the same storage and same alignment
+     *
+     * (2)      There are five standard signed integer types: "signed char", "short int", "int", "long int",
+     *          "long long int".
+     *
+     * (3)      For all of the standard signed integer types, there are five corresponding standard unsigned integer types,
+     *          with the same storage and alignment: "unsigned char", "unsigned short int", "unsigned int",
+     *          "unsigned long int", "unsigned long long int".
+     *
+     * (4)      {"wchar_t", "char16_t", "char32_t"} all relies on underlying types.
+     *
+     *
+     *  Conclusion: "wchar_t", "char16_t", "char32_t" will not be used or covered here in any way. Handle "char"
+     *              as a special case (see "to_signed" and "to_unsigned" implementation here). All other combinations
+     *              of standard integer types shall be handled.
+     */
+
+    /* Note that the implementation in this header relies on matching storage sizes and alignment of the elements at the
+       same indices in "signed_fundamentals" and "unsigned_fundamentals" and it is why there are obvious redundancies in
+       "unsigned_fundamentals". */
     typedef tuple_t<signed char,
-                    signed wchar_t,
                     signed short,
                     signed short int,
                     signed,
@@ -21,9 +44,11 @@ namespace detail
                     signed long int,
                     signed long long,
                     signed long long int,
-                    signed size_t> signed_fundamentals;
+                    short int,
+                    int,
+                    long int,
+                    long long int> signed_fundamentals;
     typedef tuple_t<unsigned char,
-                    unsigned wchar_t,
                     unsigned short,
                     unsigned short int,
                     unsigned,
@@ -32,29 +57,77 @@ namespace detail
                     unsigned long int,
                     unsigned long long,
                     unsigned long long int,
-                    unsigned size_t> unsigned_fundamentals;
+                    unsigned short int,
+                    unsigned int,
+                    unsigned long int,
+                    unsigned long long int> unsigned_fundamentals;
 
     typedef set_of<signed_fundamentals> signed_fundamentals_set;
     typedef set_of<unsigned_fundamentals> unsigned_fundamentals_set;
+
+    template <typename T, typename FROMSET, typename TOSET>
+    struct unsigned_signed_conversion_impl
+    {
+        enum { index = index_in<T,FROMSET> };
+        typedef get_element_in<index,TOSET> type;
+    };
+
+
+
 } // namespace detail
 
     template <typename T>
     struct is_unsigned
     {
-        enum { value = (static_cast<T>(0)-1 > static_cast<T>(0)) };
+        enum { value = (static_cast<T>(-1) > static_cast<T>(0)) };
     };
     template <typename T>
     struct is_signed
     {
         enum { value = !is_unsigned<T>::value };
     };
+namespace detail
+{
+    template <typename T>
+    struct containing_fundamental_type
+    {
+        typedef get_element_at<is_unsigned<T>::value, detail::signed_fundamentals, detail::unsigned_fundamentals> type;
+    };
 
+    template <typename T>
+    struct to_signed_impl
+    {
+        typedef typename detail::unsigned_signed_conversion_impl<T,typename detail::containing_fundamental_type<T>::type,detail::signed_fundamentals>::type type;
+    };
+    template <>
+    struct to_signed_impl<char>
+    {
+        typedef signed char type;
+    };
+
+    template <typename T>
+    struct to_unsigned_impl
+    {
+        typedef typename detail::unsigned_signed_conversion_impl<T,typename detail::containing_fundamental_type<T>::type,detail::unsigned_fundamentals>::type type;
+    };
+    template <>
+    struct to_unsigned_impl<char>
+    {
+        typedef unsigned char type;
+    };
+
+} // namespace detail
+
+template <typename T>
+using to_signed = typename detail::to_signed_impl<T>::type;
+template <typename T>
+using to_unsigned = typename detail::to_unsigned_impl<T>::type;
 namespace detail
 {
     template <typename T, T VAL, bool IS_ZERO>
     struct number_of_bits_of_value_impl
     {
-        static const T shifted_val = static_cast<T>(VAL << 1);
+        static constexpr T shifted_val = static_cast<T>(VAL << 1);
         enum { value = 1 + number_of_bits_of_value_impl<T, shifted_val, shifted_val == 0>::value };
     };
     template <typename T, T VAL>
@@ -67,7 +140,7 @@ namespace detail
     template <typename T>
     struct number_of_bits_of_fundamental
     {
-        enum { value = detail::number_of_bits_of_value_impl<T, static_cast<T>(1), (static_cast<T>(1) << 1) == 0>::value };
+        enum { value = detail::number_of_bits_of_value_impl<to_unsigned<T>, static_cast<to_unsigned<T>>(1), (static_cast<to_unsigned<T>>(1) << 1) == 0>::value };
     };
 
 namespace detail
@@ -78,7 +151,7 @@ namespace detail
         template <typename R>
         struct with_alignment_of
         {
-            enum { value = (alignof(R)*number_of_bits_of_fundamental<char>::value == B) };
+            enum { value = (alignof(R)*number_of_bits_of_fundamental<unsigned char>::value == B) };
         };
     };
     template <size_t S, size_t A>
@@ -89,21 +162,21 @@ namespace detail
         {
             enum { value = (
             (number_of_bits_of_fundamental<R>::value == S) &&
-            (alignof(R)*number_of_bits_of_fundamental<char>::value == A)) };
+            (alignof(R)*number_of_bits_of_fundamental<unsigned char>::value == A)) };
         };
     };
 } // namespace detail
 
     template <size_t S>
-    using get_signed_fundamental_of_bit_size = get_element_of<detail::signed_fundamentals_set>::template that_satisfies<compare_type_size<S>::template with_size_of>;
+    using get_signed_fundamental_of_bit_size = to_signed<get_element_of<detail::unsigned_fundamentals_set>::template that_satisfies<compare_type_size<S>::template with_size_of>>;
     template <size_t S>
     using get_unsigned_fundamental_of_bit_size = get_element_of<detail::unsigned_fundamentals_set>::template that_satisfies<compare_type_size<S>::template with_size_of>;
     template <size_t A>
-    using get_signed_fundamental_of_alignment = get_element_of<detail::signed_fundamentals_set>::template that_satisfies<detail::compare_alignment_size<A>::template with_alignment_of>;
+    using get_signed_fundamental_of_alignment = to_signed<get_element_of<detail::unsigned_fundamentals_set>::template that_satisfies<detail::compare_alignment_size<A>::template with_alignment_of>>;
     template <size_t A>
     using get_unsigned_fundamental_of_alignment = get_element_of<detail::unsigned_fundamentals_set>::template that_satisfies<detail::compare_alignment_size<A>::template with_alignment_of>;
     template <size_t S, size_t A>
-    using get_signed_fundamental_of_bit_size_and_alignment = get_element_of<detail::signed_fundamentals_set>::template that_satisfies<detail::compare_size_and_alignment<S,A>::template with_size_and_alignment_of>;
+    using get_signed_fundamental_of_bit_size_and_alignment = to_signed<get_element_of<detail::unsigned_fundamentals_set>::template that_satisfies<detail::compare_size_and_alignment<S,A>::template with_size_and_alignment_of>>;
     template <size_t S, size_t A>
     using get_unsigned_fundamental_of_bit_size_and_alignment = get_element_of<detail::unsigned_fundamentals_set>::template that_satisfies<detail::compare_size_and_alignment<S,A>::template with_size_and_alignment_of>;
 
@@ -113,13 +186,14 @@ namespace detail
     struct explicitly_sized_type
     {
     };
-    /*Forward declaration*/
+
     template <typename T>
     struct sized_type;
+
 } // namespace detail
 
-    template <typename R, typename T>
-    R fundamental_cast(detail::sized_type<T> const& a);
+template <typename R, typename T>
+R fundamental_cast(detail::sized_type<T> const&);
 
 namespace detail
 {
@@ -129,6 +203,7 @@ namespace detail
     private:
         T data;
     public:
+
         sized_type()
         { }
         ~sized_type()
@@ -354,10 +429,15 @@ namespace detail
             data >>= r;
         }
 
-        template <typename R>
-        friend R tmp::fundamental_cast(sized_type<T> const& a){ return static_cast<R>(a.data); }
+        template <typename R, typename U>
+        friend R tmp::fundamental_cast(sized_type<U> const& t);
+
     };
 } // namespace detail
+
+
+    template <typename R, typename U>
+    R fundamental_cast(detail::sized_type<U> const& t){ return static_cast<R>(t.data); }
 
     template <size_t S, size_t A> using unsigned_sized_type = detail::sized_type<get_unsigned_fundamental_of_bit_size_and_alignment<S,A>>;
     template <size_t S, size_t A> using signed_sized_type = detail::sized_type<get_signed_fundamental_of_bit_size_and_alignment<S,A>>;
@@ -367,24 +447,22 @@ namespace detail
     template <typename T, size_t N>
     struct ones
     {
-        static const T value = math::power<2,N-1>::value + ones<T,N-1>::value;
+        static constexpr T value = math::power<2,N-1>::value + ones<T,N-1>::value;
     };
     template <typename T>
     struct ones<T,0>
     {
-        static const T value = 0;
+        static constexpr T value = 0;
     };
 } // namespace detail
 
     template <size_t S, size_t A, size_t ... FIELDS>
     struct sized_bitfield;
-    template <size_t I, typename FUNDAMENTAL, size_t S, size_t A, size_t ... FIELDS>
-    void set_field(sized_bitfield<S,A,FIELDS...> & a, FUNDAMENTAL const& b);
     template <size_t S, size_t A>
     struct sized_bitfield<S,A> : public detail::explicitly_sized_type
     {
     private:
-        typedef typename get_unsigned_fundamental_of_bit_size_and_alignment<S,A>::type type;
+        typedef get_unsigned_fundamental_of_bit_size_and_alignment<S,A> type;
         type data;
     public:
         sized_bitfield(){}
@@ -396,19 +474,26 @@ namespace detail
         sized_bitfield(FUNDAMENTAL const& a) :
             data(a)
         { }
-        template <size_t I>
-        friend type get_field(sized_bitfield<S,A> const& a)
-        {
-            static_assert(I == 0, "Index out of range.\n");
-            return a.data;
-        }
-        template <size_t I, typename FUNDAMENTAL>
-        friend void set_field(sized_bitfield<S,A> & a, FUNDAMENTAL const& s)
-        {
-            static_assert(I == 0, "Index out of range.\n");
-            a.data = s;
-        }
+        template <size_t I,size_t U, size_t V>
+        friend get_unsigned_fundamental_of_bit_size_and_alignment<U,V> get_field(sized_bitfield<U,V> const& a);
+
+        template <size_t I, size_t U, size_t V, typename FUNDAMENTAL>
+        friend void set_field(sized_bitfield<U,V> & a, FUNDAMENTAL const& s);
     };
+
+    template <size_t I, size_t S, size_t A>
+    get_unsigned_fundamental_of_bit_size_and_alignment<S,A> get_field(sized_bitfield<S,A> const& a)
+    {
+        static_assert(I == 0, "Index out of range.\n");
+        return a.data;
+    }
+
+    template <size_t I, size_t S, size_t A, typename FUNDAMENTAL>
+    void set_field(sized_bitfield<S,A> & a, FUNDAMENTAL const& s)
+    {
+        static_assert(I == 0, "Index out of range.\n");
+        a.data = s;
+    }
 
     template <size_t S, size_t A, size_t F, size_t ... FIELDS>
     struct sized_bitfield<S,A,F,FIELDS...> : public detail::explicitly_sized_type
@@ -423,27 +508,16 @@ namespace detail
         sized_bitfield(sized_bitfield<S,A,F,FIELDS...> const& c) :
             data(c.data)
         { }
-        template <size_t I>
-        friend type get_field(sized_bitfield<S,A,F,FIELDS...> const& a)
-        {
-            static_assert(I >= 0 && I < sizeof...(FIELDS)+1, "Index out of range.\n");
-            enum { offset = math::sum_first<I,tuple_i<F,FIELDS...>>::value };
-            enum { size = get_element_at_i<I,F,FIELDS...>::value };
-            return (a.data >> offset) & detail::ones<type,size>::value;
-        }
-        template <size_t I, typename FUNDAMENTAL>
-        friend void set_field(sized_bitfield<S,A,F,FIELDS...> & a, FUNDAMENTAL const& s)
-        {
-            static_assert(I >= 0 && I < sizeof...(FIELDS)+1, "Index out of range.\n");
-            enum { offset = math::sum_first<I,tuple_i<F,FIELDS...>>::value };
-            enum { size = get_element_at_i<I,F,FIELDS...>::value };
-            a.data |= ((s & detail::ones<type,size>::value) << offset);
-        }
+        template <size_t I, size_t U, size_t V, size_t G, size_t ... GS>
+        friend get_unsigned_fundamental_of_bit_size_and_alignment<U,V> get_field(sized_bitfield<U,V,G,GS...> const& a);
+
+        template <size_t I, size_t U, size_t V, size_t ... FS, typename FUNDAMENTAL>
+        friend void set_field(sized_bitfield<U,V,FS...> & a, FUNDAMENTAL const& s);
      private:
         template <size_t N, typename ... TS>
         struct helper
         {
-            static void impl(sized_bitfield * c, TS const& ... ts){}
+            static void impl(sized_bitfield *, TS const& ...){}
         };
         template <size_t N, typename T, typename ... TS>
         struct helper<N,T,TS...>
@@ -462,6 +536,25 @@ namespace detail
             helper<0, TS...>::impl(this,ts...);
         }
     };
+
+    template <size_t I, size_t S, size_t A, size_t F, size_t ... FIELDS>
+    get_unsigned_fundamental_of_bit_size_and_alignment<S,A> get_field(sized_bitfield<S,A,F,FIELDS...> const& a)
+    {
+        static_assert(I >= 0 && I < sizeof...(FIELDS)+1, "Index out of range.\n");
+        enum { offset = math::sum_first<I,tuple_i<F,FIELDS...>>::value };
+        enum { size = get_element_at_i<I,F,FIELDS...>::value };
+        return (a.data >> offset) & detail::ones<get_unsigned_fundamental_of_bit_size_and_alignment<S,A>,size>::value;
+    }
+    template <size_t I, size_t S, size_t A, size_t ... FIELDS, typename FUNDAMENTAL>
+    void set_field(sized_bitfield<S,A,FIELDS...> & a, FUNDAMENTAL const& s)
+    {
+        static_assert(I >= 0 && I < sizeof...(FIELDS), "Index out of range.\n");
+        enum { offset = math::sum_first<I,tuple_i<FIELDS...>>::value };
+        enum { size = get_element_at_i<I,FIELDS...>::value };
+        typedef get_unsigned_fundamental_of_bit_size_and_alignment<S,A> type;
+        constexpr type mask = (~detail::ones<type,size>::value << offset)| detail::ones<type,offset>::value;
+        a.data = (a.data & mask) | ((s << offset) & ~mask);
+    }
 
 namespace detail
 {
@@ -486,34 +579,41 @@ namespace detail
     {
         template <size_t N, typename ... PS> using leaf_type = get_element_at<N,PS...>;
         template <size_t N, typename ... PS>
-        friend leaf_type<N,PS...>& tmp::get(tuple<PS...> & t){ return get_leaf_data(static_cast<leaf_node<N,leaf_type<N,PS...>>&>(t),int_type<std::is_class<leaf_type<N,PS...>>::value>()); }
+        friend leaf_type<N,PS...>& tmp::get(tuple<PS...> & t);
 
         tuple(){ }
         ~tuple(){ }
-        tuple(T const& t, TS const& ... ts)
+        tuple(T const&& t, TS const&& ... ts)
         {
-            for_all<0,T,TS...>::init(*this, t, ts...);
+            for_all<0,T,TS...>::init(*this, std::forward<const T>(t), std::forward<const TS>(ts)...);
         }
 
     private:
         template <size_t I, typename ... PS>
         struct for_all
         {
-            static void init(tuple & tup, PS const& ... ps){ }
+            static void init(tuple &, PS const&& ...){ }
         };
         template <size_t I, typename P, typename ... PS>
         struct for_all<I,P,PS...>
         {
-            static void init(tuple & tup, P const& p, PS const& ... ps)
+            static void init(tuple & tup, P const&& p, PS const&& ... ps)
             {
-                tmp::get<I>(tup) = p;
-                for_all<I+1,PS...>::init(tup,ps...);
+                tmp::get<I>(tup) = std::forward<const P>(p);
+                for_all<I+1,PS...>::init(tup,std::forward<const PS>(ps)...);
             }
         };
     };
 
-    typedef map<int_type_of_bit_size,signed_fundamentals_set> signed_fundamentals_sizes;
+}// namespace detail
+
+template <size_t N, typename ... TS>
+get_element_at<N,TS...>& get(detail::tuple<TS...> & t){ return get_leaf_data(static_cast<detail::leaf_node<N,get_element_at<N,TS...>>&>(t),int_type<std::is_class<get_element_at<N,TS...>>::value>()); }
+
+namespace detail{
+
     typedef map<int_type_of_bit_size,unsigned_fundamentals_set> unsigned_fundamentals_sizes;
+    typedef unsigned_fundamentals_sizes signed_fundamentals_sizes;
 
     template <size_t S, size_t A>
     struct composed_sized_type : explicitly_sized_type

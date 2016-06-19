@@ -132,6 +132,30 @@ namespace detail
 
     };
 
+    template <size_t I, typename T, typename ... XS>
+    struct index_of_impl;
+    template <size_t I, typename T, typename X, typename ... XS>
+    struct index_of_impl<I, T, X, XS...>
+    {
+        enum { value = types_equal<T,X>::value ? I : index_of_impl<I+1,T,XS...>::value };
+        enum { found = types_equal<T,X>::value ? true : index_of_impl<I+1,T,XS...>::found };
+    };
+    template <size_t I, typename T>
+    struct index_of_impl<I,T>
+    {
+        enum { value = 0 };
+        enum { found = false };
+    };
+
+    template <typename T, typename TUP>
+    struct index_in_impl;
+    template <typename T, template <typename...> typename TUP, typename ... XS>
+    struct index_in_impl<T,TUP<XS...>>
+    {
+        enum { value = index_of_impl<0,T,XS...>::value };
+        enum { found = index_of_impl<0,T,XS...>::found };
+    };
+
 } // detail
 
 template <typename T>
@@ -140,6 +164,15 @@ struct get_element_of
     template <template <typename> class PREDICATE>
     using that_satisfies = typename detail::get_element_of_impl<PREDICATE>::template that_satisfies<T>::type;
 };
+
+template <typename T, typename ... XS>
+constexpr auto index_of = detail::index_of_impl<0,T,XS...>::value;
+template <typename T, typename ... XS>
+constexpr auto found_among = detail::index_of_impl<0,T,XS...>::found;
+template <typename T, typename XS>
+constexpr auto index_in = detail::index_in_impl<T,XS>::value;
+template <typename T, typename XS>
+constexpr auto found_in = detail::index_in_impl<T,XS>::found;
 
 template <template <typename,typename> class OPERATOR, template <typename> class PREDICATE, typename INITVAL>
 struct fold
@@ -432,7 +465,7 @@ namespace detail
     }
 
     template <size_t I, typename T>
-    T& get_leaf_data(leaf_node<I,T> & l, int_type<0> c)
+    T& get_leaf_data(leaf_node<I,T> & l, int_type<0>)
     {
         return static_cast<data_wrapper<T,false>&>(l).data;
     }
@@ -514,16 +547,6 @@ namespace detail
     {
         typedef tuple_t<S...> type;
     };
-    template <typename ... S, typename T, typename ... TS>
-    struct select_first_impl<-1, tuple_t<S...>, T, TS...>
-    {
-        typedef tuple_t<S...> type;
-    };
-    template <typename ... S>
-    struct select_first_impl<-1, tuple_t<S...>>
-    {
-        typedef tuple_t<S...> type;
-    };
     template <size_t SELECT, typename S, size_t ... VS>
     struct select_first_i_impl
     {
@@ -541,16 +564,6 @@ namespace detail
     };
     template <size_t ... S>
     struct select_first_i_impl<0, tuple_i<S...>>
-    {
-        typedef tuple_i<S...> type;
-    };
-    template <size_t ... S, size_t V, size_t ... VS>
-    struct select_first_i_impl<-1, tuple_i<S...>, V, VS...>
-    {
-        typedef tuple_i<S...> type;
-    };
-    template <size_t ... S>
-    struct select_first_i_impl<-1, tuple_i<S...>>
     {
         typedef tuple_i<S...> type;
     };

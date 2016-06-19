@@ -5,7 +5,7 @@
 
 int main()
 {
-    alg::ds::priority_queue<int,100> pq;
+    /*alg::ds::priority_queue<int,100> pq;
     int a = 5;
     pq.insert(4);
     pq.insert(3);
@@ -69,7 +69,7 @@ int main()
     {
         printf("%d\n",sa.get_element(i));
     }
-
+    */
     test_all();
 
     return 0;
