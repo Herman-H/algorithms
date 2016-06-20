@@ -7,16 +7,10 @@ namespace tmp
 {
 
     template <typename T>
-    struct is_xvalue
-    {
-        enum { value = !std::is_lvalue_reference<T>::value && std::is_rvalue_reference<T>::value };
-    };
+    constexpr bool = !std::is_lvalue_reference<T>::value && std::is_rvalue_reference<T>::value;
 
     template <typename T>
-    struct is_prvalue
-    {
-        enum { value = !std::is_lvalue_reference<T>::value && !std::is_rvalue_reference<T>::value };
-    };
+    constexpr bool is_prvalue = !std::is_lvalue_reference<T>::value && !std::is_rvalue_reference<T>::value;
 
 
 } // namespace tmp

@@ -13,7 +13,7 @@ namespace tmp
 namespace detail
 {
 
-    /* Refer to [basic.fundamental] in C++ Standard
+    /* Refer to [basic.fundamental] in the C++ Standard
      *
      * (1)      {"char", "signed char", "unsigned char"} are distinct types but with the same storage and same alignment
      *
@@ -77,21 +77,16 @@ namespace detail
 } // namespace detail
 
     template <typename T>
-    struct is_unsigned
-    {
-        enum { value = (static_cast<T>(-1) > static_cast<T>(0)) };
-    };
+    constexpr bool is_unsigned = static_cast<T>(-1) > static_cast<T>(0);
     template <typename T>
-    struct is_signed
-    {
-        enum { value = !is_unsigned<T>::value };
-    };
+    constexpr bool is_signed = !is_unsigned<T>;
+
 namespace detail
 {
     template <typename T>
     struct containing_fundamental_type
     {
-        typedef get_element_at<is_unsigned<T>::value, detail::signed_fundamentals, detail::unsigned_fundamentals> type;
+        typedef get_element_at<is_unsigned<T>, detail::signed_fundamentals, detail::unsigned_fundamentals> type;
     };
 
     template <typename T>
@@ -122,6 +117,7 @@ template <typename T>
 using to_signed = typename detail::to_signed_impl<T>::type;
 template <typename T>
 using to_unsigned = typename detail::to_unsigned_impl<T>::type;
+
 namespace detail
 {
     template <typename T, T VAL, bool IS_ZERO>
@@ -135,13 +131,15 @@ namespace detail
     {
         enum { value = 0 };
     };
+    template <typename T>
+    struct number_of_bits_of_fundamental_
+    {
+        enum { value = number_of_bits_of_value_impl<to_unsigned<T>, static_cast<to_unsigned<T>>(1), (static_cast<to_unsigned<T>>(1) << 1) == 0>::value };
+    };
 } // namespace detail
 
     template <typename T>
-    struct number_of_bits_of_fundamental
-    {
-        enum { value = detail::number_of_bits_of_value_impl<to_unsigned<T>, static_cast<to_unsigned<T>>(1), (static_cast<to_unsigned<T>>(1) << 1) == 0>::value };
-    };
+    constexpr auto number_of_bits_of_fundamental = detail::number_of_bits_of_fundamental_<T>::value;
 
 namespace detail
 {
@@ -151,7 +149,7 @@ namespace detail
         template <typename R>
         struct with_alignment_of
         {
-            enum { value = (alignof(R)*number_of_bits_of_fundamental<unsigned char>::value == B) };
+            enum { value = (alignof(R)*number_of_bits_of_fundamental<unsigned char> == B) };
         };
     };
     template <size_t S, size_t A>
@@ -161,8 +159,8 @@ namespace detail
         struct with_size_and_alignment_of
         {
             enum { value = (
-            (number_of_bits_of_fundamental<R>::value == S) &&
-            (alignof(R)*number_of_bits_of_fundamental<unsigned char>::value == A)) };
+            (number_of_bits_of_fundamental<R> == S) &&
+            (alignof(R)*number_of_bits_of_fundamental<unsigned char> == A)) };
         };
     };
 } // namespace detail
@@ -435,7 +433,6 @@ namespace detail
     };
 } // namespace detail
 
-
     template <typename R, typename U>
     R fundamental_cast(detail::sized_type<U> const& t){ return static_cast<R>(t.data); }
 
@@ -447,7 +444,7 @@ namespace detail
     template <typename T, size_t N>
     struct ones
     {
-        static constexpr T value = math::power<2,N-1>::value + ones<T,N-1>::value;
+        static constexpr T value = math::power<2,N-1> + ones<T,N-1>::value;
     };
     template <typename T>
     struct ones<T,0>
@@ -541,7 +538,7 @@ namespace detail
     get_unsigned_fundamental_of_bit_size_and_alignment<S,A> get_field(sized_bitfield<S,A,F,FIELDS...> const& a)
     {
         static_assert(I >= 0 && I < sizeof...(FIELDS)+1, "Index out of range.\n");
-        enum { offset = math::sum_first<I,tuple_i<F,FIELDS...>>::value };
+        enum { offset = math::sum_first<I,tuple_i<F,FIELDS...>> };
         enum { size = get_element_at_i<I,F,FIELDS...>::value };
         return (a.data >> offset) & detail::ones<get_unsigned_fundamental_of_bit_size_and_alignment<S,A>,size>::value;
     }
@@ -549,7 +546,7 @@ namespace detail
     void set_field(sized_bitfield<S,A,FIELDS...> & a, FUNDAMENTAL const& s)
     {
         static_assert(I >= 0 && I < sizeof...(FIELDS), "Index out of range.\n");
-        enum { offset = math::sum_first<I,tuple_i<FIELDS...>>::value };
+        enum { offset = math::sum_first<I,tuple_i<FIELDS...>> };
         enum { size = get_element_at_i<I,FIELDS...>::value };
         typedef get_unsigned_fundamental_of_bit_size_and_alignment<S,A> type;
         constexpr type mask = (~detail::ones<type,size>::value << offset)| detail::ones<type,offset>::value;
@@ -620,7 +617,7 @@ namespace detail{
     {
     private:
         /* Select the type such that bitsoftype(type)*N=size where N is an integer*/
-        enum { greatest_divisor = math::greatest_divisor<S, unsigned_fundamentals_sizes>::value };
+        enum { greatest_divisor = math::greatest_divisor<S, unsigned_fundamentals_sizes> };
     public:
     };
 

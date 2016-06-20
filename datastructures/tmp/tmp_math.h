@@ -49,48 +49,45 @@ namespace tmp
                 using divide = int_type<A/B>;
                 using modulus = int_type<A%B>;
             };
-        } // detail
-        template <size_t BASE, size_t POWER>
-        struct power
-        {
-            enum { value = power<BASE,POWER-1>::value * BASE };
-        };
 
-        template <size_t BASE>
-        struct power<BASE,0>
-        {
-            enum { value = 1 };
-        };
+            template <size_t BASE, size_t POWER>
+            struct power_impl
+            {
+                enum { value = power_impl<BASE,POWER-1>::value * BASE };
+            };
+            template <size_t BASE>
+            struct power_impl<BASE,0>
+            {
+                enum { value = 1 };
+            };
+
+            template <size_t N, typename T>
+            struct sum_first_impl;
+            template <size_t N, template <size_t...> typename T>
+            struct sum_first_impl<N, T<>>
+            {
+                enum { value = 0 };
+            };
+            template <template <size_t...> typename T, size_t V, size_t ... VS>
+            struct sum_first_impl<0,T<V,VS...>>
+            {
+                enum { value = 0 };
+            };
+            template <size_t N, template <size_t...> typename T, size_t V, size_t ... VS>
+            struct sum_first_impl<N, T<V,VS...>>
+            {
+                enum { value = V + sum_first_impl<N-1,tuple_i<VS...>>::value };
+            };
+        } // detail
+
+        template <size_t BASE, size_t POWER>
+        constexpr auto power = detail::power_impl<BASE,POWER>::value;
 
         template <size_t ... VS>
-        struct sum
-        {
-            enum { value = 0 };
-        };
-        template <size_t V, size_t ... VS>
-        struct sum<V,VS...>
-        {
-            enum { value = V + sum<VS...>::value };
-        };
+        constexpr auto sum = (VS + ... + 0);
 
         template <size_t N, typename T>
-        struct sum_first;
-        template <size_t N, template <size_t...> class T>
-        struct sum_first<N, T<>>
-        {
-            enum { value = 0 };
-        };
-        template <template <size_t...> class T, size_t V, size_t ... VS>
-        struct sum_first<0,T<V,VS...>>
-        {
-            enum { value = 0 };
-        };
-        template <size_t N, template <size_t...> class T, size_t V, size_t ... VS>
-        struct sum_first<N, T<V,VS...>>
-        {
-            enum { value = V + sum_first<N-1,tuple_i<VS...>>::value };
-        };
-
+        constexpr auto sum_first = detail::sum_first_impl<N,T>::value;
 
 
         namespace detail
@@ -107,16 +104,19 @@ namespace tmp
             {
                 enum { value = D };
             };
+
+            template <size_t N, typename DIVISOR_SET>
+            struct greatest_divisor;
+
+            template <size_t N, template <typename ... INTTYPES> typename SET, typename ... INTTYPES>
+            struct greatest_divisor<N,SET<INTTYPES...>>
+            {
+                enum { value = detail::greatest_divisor_impl<N,1,INTTYPES...>::value };
+            };
         } // namespace detail
 
         template <size_t N, typename DIVISOR_SET>
-        struct greatest_divisor;
-
-        template <size_t N, template <typename ... INTTYPES> class SET, typename ... INTTYPES>
-        struct greatest_divisor<N,SET<INTTYPES...>>
-        {
-            enum { value = detail::greatest_divisor_impl<N,1,INTTYPES...>::value };
-        };
+        constexpr auto greatest_divisor = detail::greatest_divisor<N,DIVISOR_SET>::value;
 
         namespace detail
         {
@@ -129,7 +129,7 @@ namespace tmp
             template <size_t C, size_t P, typename ... TS>
             struct prime_test<int_type<C>,tuple_t<int_type<P>,TS...>>
             {
-                enum { value = (P*P > C ? 1 : (C%P == 0 ? 0 : prime_test<int_type<C>,tuple_t<TS...>>::value)) };
+                enum { value = (P*P > C ? 1 : (C%P) != 0 && ((C%TS::value != 0) && ...)) };
             };
 
             template <typename PS, typename N, bool B>
@@ -192,7 +192,7 @@ namespace tmp
         } // detail
 
         template <size_t N>
-        using prime = typename detail::prime_impl<N,typename detail::primes_impl<N>::type>::type;
+        constexpr auto prime = detail::prime_impl<N,typename detail::primes_impl<N>::type>::type::value;
 
     } // math
 

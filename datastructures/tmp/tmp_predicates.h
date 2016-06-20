@@ -4,12 +4,12 @@
 #include <cstddef>
 
 /* Forward declarations */
-namespace tmp{template <typename,typename>
-struct types_equal;}
+namespace tmp{namespace detail{template <typename,typename>
+struct types_equal_impl;}}
 namespace tmp{template <size_t>
 struct int_type;}
-namespace tmp{template <typename T>
-struct number_of_bits_of_fundamental;}
+namespace tmp{namespace detail{template <typename T>
+struct number_of_bits_of_fundamental_;}}
 /* End of forward declarations*/
 
 namespace tmp
@@ -20,7 +20,7 @@ struct compare
     template <typename R>
     struct with
     {
-        enum { value = types_equal<L,R>::value };
+        enum { value = detail::types_equal_impl<L,R>::value };
     };
 };
 template <size_t B>
@@ -29,13 +29,13 @@ struct compare_type_size
     template <typename R>
     struct with_size_of
     {
-        enum { value = (number_of_bits_of_fundamental<R>::value == B) };
+        enum { value = (detail::number_of_bits_of_fundamental_<R>::value == B) };
     };
 };
 template <typename T>
 struct int_type_of_bit_size
 {
-    typedef int_type<number_of_bits_of_fundamental<T>::value> type;
+    typedef int_type<detail::number_of_bits_of_fundamental_<T>::value> type;
 };
 
 } // namespace tmp

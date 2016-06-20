@@ -79,8 +79,8 @@ struct to_print_tuple<tmp::tuple_t<tmp::int_type<SEQ>...>>
 void test_type_comparation()
 {
     printf("Test of \"tmp::types_equal<T1,T2>\":\n");
-    bool types_should_equal = tmp::types_equal<int,int>::value;
-    bool types_shouldnt_equal = tmp::types_equal<bool,int>::value;
+    bool types_should_equal = tmp::types_equal<int,int>;
+    bool types_shouldnt_equal = tmp::types_equal<bool,int>;
     printf("int = int: %s\n",types_should_equal ? "true" : "false");
     printf("bool = int: %s\n", types_shouldnt_equal ? "true" : "false");
     printf("\n");
@@ -153,63 +153,63 @@ void test_tree()
 void test_power()
 {
     printf("Test of \"tmp::power<BASE,POWER>\":\n");
-    printf("2^0 = %d\n", tmp::math::power<2,0>::value);
-    printf("2^1 = %d\n", tmp::math::power<2,1>::value);
-    printf("2^2 = %d\n", tmp::math::power<2,2>::value);
-    printf("4^0 = %d\n", tmp::math::power<4,0>::value);
-    printf("4^2 = %d\n", tmp::math::power<4,2>::value);
-    printf("4^5 = %d\n", tmp::math::power<4,5>::value);
+    printf("2^0 = %d\n", tmp::math::power<2,0>);
+    printf("2^1 = %d\n", tmp::math::power<2,1>);
+    printf("2^2 = %d\n", tmp::math::power<2,2>);
+    printf("4^0 = %d\n", tmp::math::power<4,0>);
+    printf("4^2 = %d\n", tmp::math::power<4,2>);
+    printf("4^5 = %d\n", tmp::math::power<4,5>);
     printf("\n");
 }
 
 void test_sum()
 {
      printf("Test of \"tmp::sum<VS...> and tmp::sum_first<N,T<VS...>>\":\n");
-     printf("1+2+3+4+5 = %d\n", tmp::math::sum<1,2,3,4,5>::value);
-     printf("1+2+3 = %d\n", tmp::math::sum_first<3,tmp::tuple_i<1,2,3,4,5>>::value);
+     printf("1+2+3+4+5 = %llu\n", tmp::math::sum<1,2,3,4,5>);
+     printf("1+2+3 = %d\n", tmp::math::sum_first<3,tmp::tuple_i<1,2,3,4,5>>);
      printf("\n");
 }
 
 void test_signedness()
 {
     printf("Test of \"tmp::is_unsigned<TYPE>\" and \"tmp::is_signed<TYPE>\":\n");
-    printf("\"unsigned int\" is: %s\n",tmp::is_unsigned<unsigned int>::value ? "unsigned" : "signed");
-    printf("\"signed int\" is: %s\n",tmp::is_unsigned<signed int>::value ? "unsigned" : "signed");
-    printf("\"char\" is: %s\n",tmp::is_signed<char>::value ? "signed" : "unsigned");
-    printf("\"signed char\" is: %s\n",tmp::is_signed<signed char>::value ? "signed" : "unsigned");
-    printf("\"unsigned int\" is: %s\n",tmp::is_signed<unsigned int>::value ? "signed" : "unsigned");
+    printf("\"unsigned int\" is: %s\n",tmp::is_unsigned<unsigned int> ? "unsigned" : "signed");
+    printf("\"signed int\" is: %s\n",tmp::is_unsigned<signed int> ? "unsigned" : "signed");
+    printf("\"char\" is: %s\n",tmp::is_signed<char> ? "signed" : "unsigned");
+    printf("\"signed char\" is: %s\n",tmp::is_signed<signed char> ? "signed" : "unsigned");
+    printf("\"unsigned int\" is: %s\n",tmp::is_signed<unsigned int> ? "signed" : "unsigned");
     printf("\n");
 }
 
 void test_number_of_bits_of_type()
 {
     printf("Test of \"tmp::number_of_bits<TYPE>\":\n");
-    printf("Number of bits in \"unsigned char\": %d\n",tmp::number_of_bits_of_fundamental<unsigned char>::value);
-    printf("Number of bits in \"char\": %d\n",tmp::number_of_bits_of_fundamental<char>::value);
-    printf("Number of bits in \"unsigned int\": %d\n",tmp::number_of_bits_of_fundamental<unsigned int>::value);
-    printf("Number of bits in \"size_t\": %d\n",tmp::number_of_bits_of_fundamental<size_t>::value);
-    printf("Number of bits in \"long long int\": %d\n",tmp::number_of_bits_of_fundamental<long long int>::value);
-    printf("Number of bits in \"signed\": %d\n",tmp::number_of_bits_of_fundamental<signed>::value);
+    printf("Number of bits in \"unsigned char\": %d\n",tmp::number_of_bits_of_fundamental<unsigned char>);
+    printf("Number of bits in \"char\": %d\n",tmp::number_of_bits_of_fundamental<char>);
+    printf("Number of bits in \"unsigned int\": %d\n",tmp::number_of_bits_of_fundamental<unsigned int>);
+    printf("Number of bits in \"size_t\": %d\n",tmp::number_of_bits_of_fundamental<size_t>);
+    printf("Number of bits in \"long long int\": %d\n",tmp::number_of_bits_of_fundamental<long long int>);
+    printf("Number of bits in \"signed\": %d\n",tmp::number_of_bits_of_fundamental<signed>);
     printf("\n");
 }
 
 void test_selecting_type_with_bit_size()
 {
     printf("Test of \"tmp::get_signed_fundamental_of_bit_size\" and \"tmp::get_unsigned_fundamental_of_bit_size\":\n");
-    printf("Selecting a signed type with 8 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_signed_fundamental_of_bit_size<8>>::value);
-    printf("Selecting a signed type with 16 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_signed_fundamental_of_bit_size<16>>::value);
-    printf("Selecting a signed type with 32 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_signed_fundamental_of_bit_size<32>>::value);
-    printf("Selecting a signed type with 64 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_signed_fundamental_of_bit_size<64>>::value);
-    printf("Selecting an unsigned type with 8 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_unsigned_fundamental_of_bit_size<8>>::value);
-    printf("Selecting an unsigned type with 16 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_unsigned_fundamental_of_bit_size<16>>::value);
-    printf("Selecting an unsigned type with 32 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_unsigned_fundamental_of_bit_size<32>>::value);
-    printf("Selecting an unsigned type with 64 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_unsigned_fundamental_of_bit_size<64>>::value);
+    printf("Selecting a signed type with 8 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_signed_fundamental_of_bit_size<8>>);
+    printf("Selecting a signed type with 16 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_signed_fundamental_of_bit_size<16>>);
+    printf("Selecting a signed type with 32 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_signed_fundamental_of_bit_size<32>>);
+    printf("Selecting a signed type with 64 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_signed_fundamental_of_bit_size<64>>);
+    printf("Selecting an unsigned type with 8 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_unsigned_fundamental_of_bit_size<8>>);
+    printf("Selecting an unsigned type with 16 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_unsigned_fundamental_of_bit_size<16>>);
+    printf("Selecting an unsigned type with 32 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_unsigned_fundamental_of_bit_size<32>>);
+    printf("Selecting an unsigned type with 64 bits: %d\n", tmp::number_of_bits_of_fundamental<tmp::get_unsigned_fundamental_of_bit_size<64>>);
     printf("\n");
 }
 
 void test_explicitly_sized_types()
 {
-    enum { byte_size = tmp::number_of_bits_of_fundamental<char>::value };
+    enum { byte_size = tmp::number_of_bits_of_fundamental<char> };
     int v1 = 1;
     int v2 = 2;
     int v3 = 3;
@@ -334,7 +334,7 @@ void test_primes()
     V3::printme();
     printf("\nThe first twentythree primes are:\t");
     V23::printme();
-    printf("\nThirtieth prime:\t%d",tmp::math::prime<30>::value);
+    printf("\nThirtieth prime:\t%d",tmp::math::prime<30>);
 
     printf("\n");
 }

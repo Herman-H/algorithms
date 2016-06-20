@@ -38,30 +38,53 @@ struct tuple_t;
 template <size_t ...>
 struct tuple_i;
 
-template <typename T>
-struct cardinality;
-template <template <typename...> class T, typename ... TS>
-struct cardinality<T<TS...>>
+namespace detail
 {
-    enum { value = sizeof...(TS) };
-};
-template <template <size_t...> class T, size_t ... VS>
-struct cardinality<T<VS...>>
-{
-    enum { value = sizeof...(VS) };
-};
+    template <typename T>
+    struct cardinality_impl;
+    template <template <typename...> typename T, typename ... TS>
+    struct cardinality_impl<T<TS...>>
+    {
+        enum { value = sizeof...(TS) };
+    };
+    template <template <size_t...> typename T, size_t ... VS>
+    struct cardinality_impl<T<VS...>>
+    {
+        enum { value = sizeof...(VS) };
+    };
 
-template <typename,typename>
-struct types_equal
-{
-    enum { value = false };
-};
+    template <typename,typename>
+    struct types_equal_impl
+    {
+        enum { value = false };
+    };
+
+    template <typename T>
+    struct types_equal_impl<T,T>
+    {
+        enum { value = true };
+    };
+} // namespace detail
+
+/* The use of template <typename t> constexpr auto = enum_value,
+ * Referring to [dcl.enum] section 7 in the C++ standard:
+ *
+ * Quote:
+ *      "For an enumeration whose underlying type is not fixed, the underlying type is an integral type that can
+ *      represent all the enumerator values defined in the enumeration. If no integral type can represent all the
+ *      enumerator values, the enumeration is ill-formed. It is implementation-defined which integral type is used
+ *      as the underlying type except that the underlying type shall not be larger than int unless the value of an
+ *      enumerator cannot fit in an int or unsigned int. If the enumerator-list is empty, the underlying type is as
+ *      if the enumeration had a single enumerator with value 0."
+ *
+ * Conclusion: The type deduced in "auto" will probably be "int", unless the value is too large to be represented by "int".
+ */
 
 template <typename T>
-struct types_equal<T,T>
-{
-    enum { value = true };
-};
+constexpr auto cardinality = detail::cardinality_impl<T>::value;
+
+template <typename T1, typename T2>
+constexpr bool types_equal = detail::types_equal_impl<T1,T2>::value;
 
 namespace detail
 {
@@ -95,12 +118,12 @@ namespace detail
 {
     template <size_t N, typename T>
     struct get_element_in_impl;
-    template <size_t N, template <typename...> class T, typename ... TS>
+    template <size_t N, template <typename...> typename T, typename ... TS>
     struct get_element_in_impl<N, T<TS...>>
     {
         typedef get_element_at<N,TS...> type;
     };
-    template <size_t N, template <size_t ...> class T, size_t ... VS>
+    template <size_t N, template <size_t ...> typename T, size_t ... VS>
     struct get_element_in_impl<N, T<VS...>>
     {
         typedef get_element_at_i<N,VS...> type;
@@ -113,7 +136,7 @@ using get_element_in = typename detail::get_element_in_impl<N,T>::type;
 namespace detail
 {
     // the interface of this has arguments in an order which makes sense
-    template <template <typename> class PREDICATE>
+    template <template <typename> typename PREDICATE>
     struct get_element_of_impl
     {
         template <typename T>
@@ -121,7 +144,7 @@ namespace detail
         {
             typedef no_type type;
         };
-        template <template <typename...> class T, typename E, typename ... ES>
+        template <template <typename...> typename T, typename E, typename ... ES>
         struct that_satisfies<T<E,ES...>>
         {
             typedef get_element_at<PREDICATE<E>::value != 0,
@@ -137,8 +160,8 @@ namespace detail
     template <size_t I, typename T, typename X, typename ... XS>
     struct index_of_impl<I, T, X, XS...>
     {
-        enum { value = types_equal<T,X>::value ? I : index_of_impl<I+1,T,XS...>::value };
-        enum { found = types_equal<T,X>::value ? true : index_of_impl<I+1,T,XS...>::found };
+        enum { value = types_equal<T,X> ? I : index_of_impl<I+1,T,XS...>::value };
+        enum { found = types_equal<T,X> ? true : index_of_impl<I+1,T,XS...>::found };
     };
     template <size_t I, typename T>
     struct index_of_impl<I,T>
@@ -161,20 +184,20 @@ namespace detail
 template <typename T>
 struct get_element_of
 {
-    template <template <typename> class PREDICATE>
+    template <template <typename> typename PREDICATE>
     using that_satisfies = typename detail::get_element_of_impl<PREDICATE>::template that_satisfies<T>::type;
 };
 
 template <typename T, typename ... XS>
 constexpr auto index_of = detail::index_of_impl<0,T,XS...>::value;
 template <typename T, typename ... XS>
-constexpr auto found_among = detail::index_of_impl<0,T,XS...>::found;
+constexpr bool found_among = detail::index_of_impl<0,T,XS...>::found;
 template <typename T, typename XS>
 constexpr auto index_in = detail::index_in_impl<T,XS>::value;
 template <typename T, typename XS>
-constexpr auto found_in = detail::index_in_impl<T,XS>::found;
+constexpr bool found_in = detail::index_in_impl<T,XS>::found;
 
-template <template <typename,typename> class OPERATOR, template <typename> class PREDICATE, typename INITVAL>
+template <template <typename,typename> typename OPERATOR, template <typename> typename PREDICATE, typename INITVAL>
 struct fold
 {
     template <typename TUPLE>
@@ -183,7 +206,7 @@ struct fold
         enum { value = INITVAL::value };
     };
 
-    template <template <typename...> class TUPLE, typename E, typename ... ES>
+    template <template <typename...> typename TUPLE, typename E, typename ... ES>
     struct on<TUPLE<E,ES...>>
     {
         enum { value = OPERATOR<PREDICATE<E>,on<tuple_t<ES...>>>::value };
@@ -205,14 +228,14 @@ namespace detail
 }
 
 
-template <template <typename> class PREDICATE>
+template <template <typename> typename PREDICATE>
 struct sum
 {
     template <typename TUPLE>
     using of = typename fold<detail::addition,PREDICATE,int_type<0>>::template on<TUPLE>;
 };
 
-template <template <typename> class PREDICATE>
+template <template <typename> typename PREDICATE>
 struct product
 {
     template <typename TUPLE>
@@ -235,9 +258,9 @@ namespace detail
     template <typename E, typename ... ES, typename ... S>
     struct set_of_impl<tuple_t<E,ES...>, tuple_t<S...>>
     {
-        typedef get_element_at<    sum<compare<E>::template with>::template of<tuple_t<S...>>::value != 0,
-                                                typename set_of_impl<tuple_t<ES...>,tuple_t<S...,E>>::type,
-                                                typename set_of_impl<tuple_t<ES...>,tuple_t<S...>>::type
+        typedef get_element_at< (types_equal<E,S> || ...) == true,
+                                 typename set_of_impl<tuple_t<ES...>,tuple_t<S...,E>>::type,
+                                 typename set_of_impl<tuple_t<ES...>,tuple_t<S...>>::type
                                 > type;
 
     };
@@ -257,7 +280,7 @@ struct append
     struct with;
 };
 
-template <template <typename...> class T, typename ... ES>
+template <template <typename...> typename T, typename ... ES>
 struct append<T<ES...>>
 {
     template <typename B>
@@ -271,7 +294,7 @@ struct prepend
     struct with;
 };
 
-template <template <typename...> class T, typename ... ES>
+template <template <typename...> typename T, typename ... ES>
 struct prepend<T<ES...>>
 {
     template <typename A>
@@ -285,17 +308,17 @@ namespace detail
     {
         typedef S type;
     };
-    template <size_t I, template <typename...> class TUP, typename ... S, typename T, typename ... TS, typename E>
+    template <size_t I, template <typename...> typename TUP, typename ... S, typename T, typename ... TS, typename E>
     struct insert_element_at_impl<I, TUP<S...>, TUP<T,TS...>, E>
     {
         typedef typename insert_element_at_impl<I-1, TUP<S...,T>, TUP<TS...>, E>::type type;
     };
-    template <template <typename...> class TUP, typename ... S, typename T, typename ... TS, typename E>
+    template <template <typename...> typename TUP, typename ... S, typename T, typename ... TS, typename E>
     struct insert_element_at_impl<0, TUP<S...>, TUP<T,TS...>, E>
     {
         typedef TUP<S...,E,T,TS...> type;
     };
-    template <template <typename...> class TUP, typename ... S, typename ... TS, typename E>
+    template <template <typename...> typename TUP, typename ... S, typename ... TS, typename E>
     struct insert_element_at_impl<0, TUP<S...>, TUP<TS...>, E>
     {
         typedef TUP<S...,E,TS...> type;
@@ -305,17 +328,17 @@ namespace detail
     {
         typedef S type;
     };
-    template <size_t I, template <size_t...> class TUP, size_t ... S, size_t T, size_t ... TS, size_t E>
+    template <size_t I, template <size_t...> typename TUP, size_t ... S, size_t T, size_t ... TS, size_t E>
     struct insert_element_at_i_impl<I, TUP<S...>, TUP<T,TS...>, E>
     {
         typedef typename insert_element_at_i_impl<I-1, TUP<S...,T>, TUP<TS...>, E>::type type;
     };
-    template <template <size_t...> class TUP, size_t ... S, size_t T, size_t ... TS, size_t E>
+    template <template <size_t...> typename TUP, size_t ... S, size_t T, size_t ... TS, size_t E>
     struct insert_element_at_i_impl<0, TUP<S...>, TUP<T,TS...>, E>
     {
         typedef TUP<S...,E,T,TS...> type;
     };
-    template <template <size_t...> class TUP, size_t ... S, size_t ... TS, size_t E>
+    template <template <size_t...> typename TUP, size_t ... S, size_t ... TS, size_t E>
     struct insert_element_at_i_impl<0, TUP<S...>, TUP<TS...>, E>
     {
         typedef TUP<S...,E,TS...> type;
@@ -329,7 +352,7 @@ struct insert_element_in
     template <size_t N>
     struct at;
 };
-template <typename E,template <typename...> class T, typename ... TS>
+template <typename E,template <typename...> typename T, typename ... TS>
 struct insert_element_in<E,T<TS...>>
 {
     template <size_t N>
@@ -342,7 +365,7 @@ struct insert_value_in
     template <size_t N>
     struct at;
 };
-template <size_t V,template <size_t...> class T, size_t ... VS>
+template <size_t V,template <size_t...> typename T, size_t ... VS>
 struct insert_value_in<V,T<VS...>>
 {
     template <size_t N>
@@ -426,21 +449,21 @@ using tree = typename detail::tree_impl<T>::type;
 
 namespace detail
 {
-    template <template <typename> class F, typename T, typename N>
+    template <template <typename> typename F, typename T, typename N>
     struct map_impl;
-    template <template <typename> class F, template <typename...> class T, typename ... NS>
+    template <template <typename> typename F, template <typename...> typename T, typename ... NS>
     struct map_impl<F,T<>,tuple_t<NS...>>
     {
         typedef tuple_t<NS...> type;
     };
-    template <template <typename> class F, template <typename...> class T, typename E, typename ... ES, typename ... NS>
+    template <template <typename> typename F, template <typename...> typename T, typename E, typename ... ES, typename ... NS>
     struct map_impl<F,T<E,ES...>,tuple_t<NS...>>
     {
         typedef typename map_impl<F,T<ES...>,tuple_t<NS...,typename F<E>::type>>::type type;
     };
 } // namespace detail
 
-template <template <typename> class F, typename T>
+template <template <typename> typename F, typename T>
 using map = typename detail::map_impl<F,T,tuple_t<>>::type;
 
 namespace detail
@@ -641,7 +664,7 @@ namespace detail
 } // namespace detail
 
 template <typename T, size_t N>
-using split_tuple = typename detail::split_tuple_impl<typename detail::split_tuple_sizes_impl<cardinality<T>::value, N>::type,tuple_t<>,T>::type;
+using split_tuple = typename detail::split_tuple_impl<typename detail::split_tuple_sizes_impl<cardinality<T>, N>::type,tuple_t<>,T>::type;
 
 template <typename T>
 struct fail

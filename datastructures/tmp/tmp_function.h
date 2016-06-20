@@ -200,7 +200,7 @@ namespace tmp
         typename callable_type<LFUNCTOR>::return_type compose_functions(LFUNCTOR && lfunctor, RFUNCTOR && rfunctor, GARGS&& ... args)
         {
             return compose_functions_impl<F1F2,
-                            sequence<cardinality<typename callable_type<LFUNCTOR>::arguments>::value>,
+                            sequence<cardinality<typename callable_type<LFUNCTOR>::arguments>>,
                             F1SEL, F2SEL, typename callable_type<LFUNCTOR>::return_type, typename callable_type<RFUNCTOR>::return_type,
                             typename callable_type<RFUNCTOR>::arguments, typename callable_type<RFUNCTOR>::arguments>::compose_functions
                    (std::forward<LFUNCTOR>(lfunctor),std::forward<RFUNCTOR>(rfunctor),std::forward<GARGS>(args)...);
@@ -280,7 +280,7 @@ namespace tmp
     {
         template <typename T>
         struct tuple_arguments_impl;
-        template <template <size_t...> class T, size_t ... NS>
+        template <template <size_t...> typename T, size_t ... NS>
         struct tuple_arguments_impl<T<NS...>>
         {
             template <typename R, typename ... FARGS, typename ... ARGS>
